@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Cobra Vai Fumar - FEB 1944 (Boomer Shooter 2.5D)</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="game-container">
+    <header class="game-header">
+        <h1>★ A COBRA VAI FUMAR! - FEB 1944</h1>
+        <span>CAMPANHA DA ITÁLIA | MONTE CASTELLO</span>
+    </header>
+
+    <div class="canvas-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div id="scanlines" class="scanlines"></div>
+    </div>
+
+    <footer class="game-footer">
+        <div>
+            <strong>Controles:</strong> [WASD] Mover | [MOUSE] Mirar & Atirar | [1-4] Armas | [E] Abrir/Interagir
+        </div>
+        <button id="toggleScanlines" class="btn-toggle">CRT Scanlines: ON</button>
+    </footer>
+</div>
+
+<script type="module" src="js/main.js"></script>
+<script>
+    // Toggle Scanlines
+    const scanlines = document.getElementById('scanlines');
+    const toggleBtn = document.getElementById('toggleScanlines');
+    let scanlinesEnabled = true;
+
+    toggleBtn.addEventListener('click', () => {
+        scanlinesEnabled = !scanlinesEnabled;
+        scanlines.style.display = scanlinesEnabled ? 'block' : 'none';
+        toggleBtn.textContent = `CRT Scanlines: ${scanlinesEnabled ? 'ON' : 'OFF'}`;
+    });
+</script>
+
+</body>
+</html>
