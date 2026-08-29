@@ -20,13 +20,11 @@ export class InputManager {
         window.addEventListener('keydown', (e) => {
             this.keys[e.code] = true;
 
-            // Teclas de Armas 1, 2, 3, 4
             if (e.code === 'Digit1' && this.onWeaponSelect) this.onWeaponSelect(0);
             if (e.code === 'Digit2' && this.onWeaponSelect) this.onWeaponSelect(1);
             if (e.code === 'Digit3' && this.onWeaponSelect) this.onWeaponSelect(2);
             if (e.code === 'Digit4' && this.onWeaponSelect) this.onWeaponSelect(3);
 
-            // Interação (E ou Espaço)
             if ((e.code === 'KeyE' || e.code === 'Space') && this.onInteract) {
                 this.onInteract();
             }
@@ -36,7 +34,6 @@ export class InputManager {
             this.keys[e.code] = false;
         });
 
-        // Mouse Pointer Lock
         this.canvas.addEventListener('click', () => {
             if (!this.pointerLocked && document.pointerLockElement !== this.canvas) {
                 this.canvas.requestPointerLock();
@@ -66,7 +63,6 @@ export class InputManager {
             }
         });
 
-        // Troca de arma pela roda do mouse
         window.addEventListener('wheel', (e) => {
             if (this.onWeaponWheel) {
                 this.onWeaponWheel(e.deltaY > 0 ? 1 : -1);

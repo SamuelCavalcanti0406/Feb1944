@@ -4,7 +4,7 @@
 
 export class Camera {
     constructor() {
-        this.fov = Math.PI / 3; // 60 graus FOV clássico
+        this.fov = Math.PI / 3;
         this.bobTimer = 0;
         this.bobX = 0;
         this.bobY = 0;
@@ -16,7 +16,6 @@ export class Camera {
             this.bobX = Math.cos(this.bobTimer * 0.5) * 6;
             this.bobY = Math.abs(Math.sin(this.bobTimer)) * 6;
         } else {
-            // Retorno suave da respiração
             this.bobTimer = 0;
             this.bobX *= Math.max(0, 1 - dt * 10);
             this.bobY *= Math.max(0, 1 - dt * 10);

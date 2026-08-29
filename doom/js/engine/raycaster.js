@@ -1,6 +1,6 @@
 /**
  * Motor Raycaster 2.5D DDA (Digital Differential Analysis)
- * Renderização de paredes texturizadas, portas deslizantes, iluminação por distância e sprites 3D ordenados (Z-Buffer).
+ * Renderização de paredes texturizadas, portas blindadas deslizantes, iluminação/fog dinâmico por fase e sprites 3D ordenados (Z-Buffer).
  */
 import { TILE_TYPES } from '../world/map.js';
 
@@ -14,7 +14,6 @@ export class Raycaster {
         this.initTextureCanvases();
     }
 
-    // Pré-cria canvases HTML para fatiamento ultrarrápido com drawImage
     initTextureCanvases() {
         const texs = this.textureManager.textures;
         for (const key in texs) {
@@ -35,33 +34,32 @@ export class Raycaster {
 
         ctx.imageSmoothingEnabled = false;
 
-        // Limpa z-buffer
         if (this.zBuffer.length !== width) {
             this.zBuffer = new Float32Array(width);
         }
 
-        // Recuo visual da câmera (Kick vertical e de profundidade ao disparar)
         const kickY = weaponSystem ? weaponSystem.cameraKickY : 0;
         const kickZ = weaponSystem ? weaponSystem.cameraKickZ : 0;
 
-        // 1. Renderiza Teto e Chão com Gradiente Atmosférico
-        this.renderCeilingAndFloor(ctx, width, height, player, isMuzzleFlash, kickY);
+        // 1. Renderiza Teto e Chão com base na Fase Atual
+        this.renderCeilingAndFloor(ctx, width, height, player, isMuzzleFlash, kickY, gameMap);
 
-        // 2. Projeção de Câmera 2.5D (com leve expansão de FOV pelo kickZ)
+        // 2. Projeção de Câmera 2.5D
         const fov = camera.fov + (kickZ * 0.003);
         const halfFov = fov / 2;
         const dirX = Math.cos(player.angle);
         const dirY = Math.sin(player.angle);
-        // Plano da câmera perpendicular à direção
         const planeX = -dirY * Math.tan(halfFov);
         const planeY = dirX * Math.tan(halfFov);
 
         const shakeX = bloodScreen.shakeX;
-        const shakeY = bloodScreen.shakeY - kickY; // Deslocamento da câmera para cima ao atirar
+        const shakeY = bloodScreen.shakeY - kickY;
 
-        // 3. Loop de Raycasting por Coluna
+        // Densidade de Fog da fase (Fase 2 possui fog mais escuro e fechado: 8.5)
+        const fogDistance = gameMap.fogDensity || 12.0;
+
+        // 3. Loop de Raycasting DDA por Coluna
         for (let x = 0; x < width; x++) {
-            // Coordenada no espaço de câmera [-1, 1]
             const cameraX = (2 * x) / width - 1;
             const rayDirX = dirX + planeX * cameraX;
             const rayDirY = dirY + planeY * cameraX;
@@ -92,12 +90,11 @@ export class Raycaster {
             }
 
             let hit = 0;
-            let side = 0; // 0 = X, 1 = Y
+            let side = 0;
             let hitDoor = null;
             let wallType = 0;
             let doorOffsetHit = 0;
 
-            // Avanço no grid DDA
             while (hit === 0) {
                 if (sideDistX < sideDistY) {
                     sideDistX += deltaDistX;
@@ -113,7 +110,6 @@ export class Raycaster {
                 if (wallType > 0) {
                     const door = gameMap.doors[`${mapX},${mapY}`];
                     if (door) {
-                        // Calcula ponto de impacto exato na porta deslizante
                         let hitDist;
                         if (side === 0) {
                             hitDist = (mapX - player.x + (1 - stepX) / 2) / rayDirX;
@@ -129,9 +125,8 @@ export class Raycaster {
                         }
                         wallHitX -= Math.floor(wallHitX);
 
-                        // Se a porta abriu o suficiente, o raio atravessa
                         if (wallHitX < door.offset) {
-                            continue; // Atravessa o vão aberto
+                            continue;
                         } else {
                             doorOffsetHit = door.offset;
                             hitDoor = door;
@@ -143,7 +138,6 @@ export class Raycaster {
                 }
             }
 
-            // Distância perpendicular (remove o efeito olho de peixe)
             let perpWallDist;
             if (side === 0) {
                 perpWallDist = (mapX - player.x + (1 - stepX) / 2) / rayDirX;
@@ -153,12 +147,10 @@ export class Raycaster {
 
             this.zBuffer[x] = perpWallDist;
 
-            // Altura da fatia na tela
             const lineHeight = Math.floor(height / Math.max(0.001, perpWallDist));
             const drawStart = Math.floor(-lineHeight / 2 + height / 2 + camera.bobY + shakeY);
             const drawEnd = Math.floor(lineHeight / 2 + height / 2 + camera.bobY + shakeY);
 
-            // Coordenada X na textura (0 a 63)
             let wallX;
             if (side === 0) {
                 wallX = player.y + perpWallDist * rayDirY;
@@ -176,26 +168,24 @@ export class Raycaster {
             }
             texX = Math.max(0, Math.min(63, texX));
 
-            // Seleciona a textura
             const texCanvas = this.getTextureCanvasForTile(wallType);
 
-            // Renderiza a fatia vertical da parede
             ctx.drawImage(
                 texCanvas,
                 texX, 0, 1, 64,
                 x + shakeX, drawStart, 1, drawEnd - drawStart
             );
 
-            // Iluminação / Fog de distância (com reforço do muzzle flash)
+            // Sombreamento por Distância / Fog de Bunker Subterrâneo Escuro
             const flashBoost = isMuzzleFlash ? 0.35 : 0.0;
-            const darkFactor = Math.max(0.0, Math.min(0.9, (perpWallDist / 13) - flashBoost + (side === 1 ? 0.15 : 0)));
+            const darkFactor = Math.max(0.0, Math.min(0.95, (perpWallDist / fogDistance) - flashBoost + (side === 1 ? 0.15 : 0)));
             if (darkFactor > 0) {
-                ctx.fillStyle = `rgba(15, 18, 20, ${darkFactor})`;
+                ctx.fillStyle = `rgba(10, 12, 14, ${darkFactor})`;
                 ctx.fillRect(x + shakeX, drawStart, 1, drawEnd - drawStart);
             }
         }
 
-        // 4. Renderização de Sprites (Inimigos, Pickups e Sangue 3D)
+        // 4. Renderização de Sprites com Z-Buffer
         this.renderSprites(ctx, width, height, player, dirX, dirY, planeX, planeY, enemies, pickups, particleManager, camera, shakeX, shakeY);
     }
 
@@ -208,41 +198,59 @@ export class Raycaster {
             case TILE_TYPES.DOOR_NORMAL: return this.cachedTextureCanvases['door_normal'];
             case TILE_TYPES.DOOR_IRON: return this.cachedTextureCanvases['door_iron'];
             case TILE_TYPES.DOOR_GOLD: return this.cachedTextureCanvases['door_gold'];
+            case TILE_TYPES.DOOR_OFFICER: return this.cachedTextureCanvases['door_officer'];
+            case TILE_TYPES.ARMORED_DOOR: return this.cachedTextureCanvases['armored_door'];
+            case TILE_TYPES.DIRTY_CONCRETE: return this.cachedTextureCanvases['dirty_concrete'];
+            case TILE_TYPES.WAR_ROOM_MAP: return this.cachedTextureCanvases['war_room_map'];
+            case TILE_TYPES.NAZI_BANNER: return this.cachedTextureCanvases['nazi_banner'];
             case TILE_TYPES.SECRET_WALL: return this.cachedTextureCanvases['secret'];
             case TILE_TYPES.EXIT_WALL: return this.cachedTextureCanvases['exit'];
-            default: return this.cachedTextureCanvases['bunker'];
+            default: return this.cachedTextureCanvases['dirty_concrete'] || this.cachedTextureCanvases['bunker'];
         }
     }
 
-    renderCeilingAndFloor(ctx, width, height, player, isMuzzleFlash, kickY = 0) {
+    renderCeilingAndFloor(ctx, width, height, player, isMuzzleFlash, kickY = 0, gameMap) {
         const halfH = height / 2 - kickY;
 
-        // Céu / Teto (Gradiente escuro / tempestade na Itália)
-        const ceilGrad = ctx.createLinearGradient(0, 0, 0, halfH);
-        ceilGrad.addColorStop(0, '#101419');
-        ceilGrad.addColorStop(1, '#2c333d');
-        ctx.fillStyle = ceilGrad;
-        ctx.fillRect(0, 0, width, halfH);
+        if (gameMap.currentLevel === 2) {
+            // Teto de Bunker Subterrâneo Escuro
+            const ceilGrad = ctx.createLinearGradient(0, 0, 0, halfH);
+            ceilGrad.addColorStop(0, '#0a0d0f');
+            ceilGrad.addColorStop(1, '#181d22');
+            ctx.fillStyle = ceilGrad;
+            ctx.fillRect(0, 0, width, halfH);
 
-        // Chão / Trincheira (Gradiente terra e lama)
-        const floorGrad = ctx.createLinearGradient(0, halfH, 0, height);
-        floorGrad.addColorStop(0, '#221a14');
-        floorGrad.addColorStop(1, '#130d09');
-        ctx.fillStyle = floorGrad;
-        ctx.fillRect(0, halfH, width, height - halfH);
+            // Chão de Aço Diamantado Escuro
+            const floorGrad = ctx.createLinearGradient(0, halfH, 0, height);
+            floorGrad.addColorStop(0, '#191c20');
+            floorGrad.addColorStop(1, '#0e1012');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, halfH, width, height - halfH);
+        } else {
+            // Céu Nublado de Inverno na Itália
+            const ceilGrad = ctx.createLinearGradient(0, 0, 0, halfH);
+            ceilGrad.addColorStop(0, '#101419');
+            ceilGrad.addColorStop(1, '#2c333d');
+            ctx.fillStyle = ceilGrad;
+            ctx.fillRect(0, 0, width, halfH);
+
+            // Chão de Trincheira com Lama e Neve
+            const floorGrad = ctx.createLinearGradient(0, halfH, 0, height);
+            floorGrad.addColorStop(0, '#221a14');
+            floorGrad.addColorStop(1, '#130d09');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(0, halfH, width, height - halfH);
+        }
     }
 
     renderSprites(ctx, width, height, player, dirX, dirY, planeX, planeY, enemies, pickups, particleManager, camera, shakeX, shakeY) {
-        // Coleta todos os sprites a serem renderizados
         const sprites = [];
 
-        // Inimigos
         for (const e of enemies) {
             const dist = Math.hypot(player.x - e.x, player.y - e.y);
             sprites.push({ x: e.x, y: e.y, z: 0, dist, obj: e, type: 'enemy' });
         }
 
-        // Pickups
         for (const p of pickups) {
             if (!p.collected) {
                 const dist = Math.hypot(player.x - p.x, player.y - p.y);
@@ -250,40 +258,31 @@ export class Raycaster {
             }
         }
 
-        // Partículas 3D (Sangue, faíscas)
         for (const pt of particleManager.particles) {
             const dist = Math.hypot(player.x - pt.x, player.y - pt.y);
             sprites.push({ x: pt.x, y: pt.y, z: pt.z, dist, obj: pt, type: 'particle' });
         }
 
-        // Ordena sprites de trás para frente (Painter's Algorithm)
         sprites.sort((a, b) => b.dist - a.dist);
 
-        // Projeta cada sprite na tela
         const invDet = 1.0 / (planeX * dirY - dirX * planeY);
 
         for (const sprite of sprites) {
             const spriteX = sprite.x - player.x;
             const spriteY = sprite.y - player.y;
 
-            // Transformação com a matriz inversa de câmera
             const transformX = invDet * (dirY * spriteX - dirX * spriteY);
             const transformY = invDet * (-planeY * spriteX + planeX * spriteY);
 
-            if (transformY <= 0.1) continue; // Atrás da câmera
+            if (transformY <= 0.1) continue;
 
             const spriteScreenX = Math.floor((width / 2) * (1 + transformX / transformY));
-
-            // Altura e largura do sprite na tela
             const spriteHeight = Math.abs(Math.floor(height / transformY));
             const spriteWidth = spriteHeight;
 
             const drawStartY = Math.floor(-spriteHeight / 2 + height / 2 + camera.bobY + shakeY - (sprite.z * spriteHeight * 0.8));
-            const drawStartX = Math.floor(-spriteWidth / 2 + spriteScreenX + shakeX);
 
-            // Checa se o centro do sprite está visível no z-buffer
             if (spriteScreenX >= -spriteWidth && spriteScreenX < width + spriteWidth) {
-                // Checa amostragem no z-buffer
                 const checkX = Math.max(0, Math.min(width - 1, spriteScreenX));
                 if (transformY < this.zBuffer[checkX] + 0.2) {
                     if (sprite.type === 'enemy') {
@@ -301,7 +300,6 @@ export class Raycaster {
         }
     }
 
-    // Sistema de Hitscan / Disparo de Arma contra Inimigos
     performHitscan(player, weaponData, enemies, gameMap, soundFX, particleManager, hud) {
         const spreadAngle = (Math.random() - 0.5) * weaponData.spread;
         const shootAngle = player.angle + spreadAngle;
@@ -319,16 +317,13 @@ export class Raycaster {
             const dist = Math.hypot(ex, ey);
 
             if (dist <= closestDist) {
-                // Ângulo até o inimigo
                 const enemyAngle = Math.atan2(ey, ex);
                 let diffAngle = enemyAngle - shootAngle;
                 while (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
                 while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
 
-                // Margem angular de acerto (cone de mira)
                 const hitThreshold = Math.atan2(enemy.radius, dist);
                 if (Math.abs(diffAngle) < hitThreshold) {
-                    // Verifica se há parede bloqueando a linha de tiro
                     if (enemy.checkLineOfSight(player.x, player.y, gameMap)) {
                         closestDist = dist;
                         closestEnemy = enemy;
@@ -341,7 +336,6 @@ export class Raycaster {
             closestEnemy.takeDamage(weaponData.damage, soundFX, particleManager, hud);
             return { hit: true, target: closestEnemy, distance: closestDist };
         } else {
-            // Tiro atingiu parede ou nada
             const sparkDist = Math.min(weaponData.range, 8);
             particleManager.spawnSparks(player.x + dirX * sparkDist, player.y + dirY * sparkDist, 0.5, 3);
             return { hit: false };

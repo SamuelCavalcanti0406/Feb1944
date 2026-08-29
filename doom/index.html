@@ -11,7 +11,7 @@
 <div class="game-container">
     <header class="game-header">
         <h1>★ A COBRA VAI FUMAR! - FEB 1944</h1>
-        <span>CAMPANHA DA ITÁLIA | MONTE CASTELLO</span>
+        <span>CAMPANHA DA ITÁLIA | FASE 1: MONTE CASTELLO &bull; FASE 2: BUNKER SUBTERRÂNEO</span>
     </header>
 
     <div class="canvas-wrapper">
@@ -21,7 +21,7 @@
 
     <footer class="game-footer">
         <div>
-            <strong>Controles:</strong> [WASD] Mover | [MOUSE] Mirar & Atirar | [1-4] Armas | [E] Abrir/Interagir
+            <strong>Controles:</strong> [WASD] Mover & Strafe | [MOUSE] Mirar & Atirar | [1-4] Armas | [E / ESPAÇO] Interagir
         </div>
         <button id="toggleScanlines" class="btn-toggle">CRT Scanlines: ON</button>
     </footer>
@@ -29,7 +29,6 @@
 
 <script type="module" src="js/main.js"></script>
 <script>
-    // Toggle Scanlines
     const scanlines = document.getElementById('scanlines');
     const toggleBtn = document.getElementById('toggleScanlines');
     let scanlinesEnabled = true;

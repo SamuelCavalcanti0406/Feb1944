@@ -1,6 +1,6 @@
 /**
  * Entidade do Jogador (O "Pracinha" da FEB)
- * Movimentação ágil e fluida com foco em Strafe, controle de vida, armadura, dano e timers de sangue.
+ * Movimentação ágil focada em Strafe, preservação de status entre fases e gerenciamento de chaves (Ferro, Ouro, Oficial).
  */
 
 export class Player {
@@ -31,11 +31,12 @@ export class Player {
         // Chaves
         this.hasIronKey = false;
         this.hasGoldKey = false;
+        this.hasOfficerKey = false;
 
         // Timers de Efeitos Visuais
         this.coffeeTimer = 0;
         this.damageFlashTimer = 0;
-        this.bloodOnFaceTimer = 0; // Sangue respingado no rosto e cantos da tela
+        this.bloodOnFaceTimer = 0;
         this.faceState = 'normal'; // 'normal', 'firing', 'hurt', 'grin', 'dead'
         this.faceTimer = 0;
 
@@ -44,24 +45,30 @@ export class Player {
         this.secretsFound = 0;
     }
 
-    reset(spawn) {
+    reset(spawn, preserveStats = false) {
         this.x = spawn.x;
         this.y = spawn.y;
         this.angle = spawn.angle;
-        this.health = 100;
-        this.armor = 25;
-        this.ammo = { revolver: 24, smg: 60, rifle: 16 };
+
+        // Limpa chaves da fase anterior
         this.hasIronKey = false;
         this.hasGoldKey = false;
+        this.hasOfficerKey = false;
+
         this.coffeeTimer = 0;
         this.damageFlashTimer = 0;
         this.bloodOnFaceTimer = 0;
         this.faceState = 'normal';
         this.faceTimer = 0;
-        this.kills = 0;
+
+        if (!preserveStats) {
+            this.health = 100;
+            this.armor = 25;
+            this.ammo = { revolver: 24, smg: 60, rifle: 16 };
+            this.kills = 0;
+        }
     }
 
-    // Impacto de dano com flash vermelho e tremor violento imediato
     takeDamage(amount, soundFX, bloodScreen) {
         if (this.health <= 0) return;
 
@@ -72,12 +79,12 @@ export class Player {
         }
 
         this.health = Math.max(0, this.health - amount);
-        this.damageFlashTimer = 0.15; // Flash vermelho rápido e agressivo
+        this.damageFlashTimer = 0.15;
         this.faceState = 'hurt';
         this.faceTimer = 0.6;
 
         soundFX.playPlayerHurt();
-        bloodScreen.addViolentShake(0.85); // Tremor violento por 0.1s
+        bloodScreen.addViolentShake(0.85);
 
         if (this.health <= 0) {
             this.faceState = 'dead';
@@ -104,7 +111,7 @@ export class Player {
     }
 
     triggerCloseKillBlood() {
-        this.bloodOnFaceTimer = 2.0; // Gotas de sangue no rosto e visor desvanecem em 2 segundos
+        this.bloodOnFaceTimer = 2.0;
         this.triggerGrin();
     }
 
@@ -127,7 +134,6 @@ export class Player {
 
         if (this.health <= 0) return;
 
-        // Rotação rápida e precisa da câmera
         const rotSpeed = 2.6;
         if (input.keys['ArrowLeft'] || input.keys['KeyQ']) {
             this.angle -= rotSpeed * dt;
@@ -142,10 +148,10 @@ export class Player {
 
         this.angle = (this.angle + Math.PI * 2) % (Math.PI * 2);
 
-        // Movimentação Rápida & Responsiva focada em Strafe (DOOM Combat Dance)
+        // Movimentação ágil & responsiva focada em Strafe (DOOM strafe dance)
         const speedBoost = this.coffeeTimer > 0 ? 1.6 : 1.0;
         const baseSpeed = 4.4 * speedBoost;
-        const strafeSpeed = 4.6 * speedBoost; // Strafe lateral ligeiramente mais rápido
+        const strafeSpeed = 4.6 * speedBoost;
 
         let moveForward = 0;
         let moveStrafe = 0;
@@ -172,7 +178,6 @@ export class Player {
             const dx = totalDx * dt;
             const dy = totalDy * dt;
 
-            // Deslizamento suave em paredes (Slide collision)
             const newX = this.x + dx;
             const rX = dx > 0 ? this.radius : -this.radius;
             if (!gameMap.isSolid(newX + rX, this.y)) {

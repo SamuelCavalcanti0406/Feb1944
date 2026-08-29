@@ -1,6 +1,5 @@
 /**
  * Sistema de Áudio Procedural via Web Audio API
- * Sem necessidade de arquivos externos de áudio - resposta instantânea!
  */
 export class SoundFX {
     constructor() {
@@ -37,13 +36,11 @@ export class SoundFX {
         }
     }
 
-    // Tiro de Revólver M1917 (Grave, com estalo e eco)
     playRevolverShot() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
         const now = this.ctx.currentTime;
 
-        // Ruído branco (explosão do pó)
         const bufferSize = this.ctx.sampleRate * 0.18;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -67,7 +64,6 @@ export class SoundFX {
         gain.connect(this.sfxGain);
         noise.start(now);
 
-        // Sub-grave para dar o "soco" (punch)
         const osc = this.ctx.createOscillator();
         const oscGain = this.ctx.createGain();
         osc.type = 'triangle';
@@ -82,7 +78,6 @@ export class SoundFX {
         osc.stop(now + 0.15);
     }
 
-    // Thompson .45 Submachine Gun (Tiro rápido, crocante e estridente)
     playThompsonShot() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -125,29 +120,29 @@ export class SoundFX {
         osc.stop(now + 0.1);
     }
 
-    // M1 Garand Shot (Explosão pesada .30-06)
-    playGarandShot() {
+    // Disparo da Metralhadora Pesada MG42 ("A Lurdinha" / Hitler's Buzzsaw)
+    playMG42Shot() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
         const now = this.ctx.currentTime;
 
-        const bufferSize = this.ctx.sampleRate * 0.28;
+        const bufferSize = this.ctx.sampleRate * 0.09;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
-            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.05));
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.02));
         }
         const noise = this.ctx.createBufferSource();
         noise.buffer = buffer;
 
         const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(2800, now);
-        filter.frequency.exponentialRampToValueAtTime(80, now + 0.28);
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(3200, now);
+        filter.Q.value = 2.5;
 
         const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(1.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+        gain.gain.setValueAtTime(1.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
 
         noise.connect(filter);
         filter.connect(gain);
@@ -156,25 +151,23 @@ export class SoundFX {
 
         const osc = this.ctx.createOscillator();
         const oscGain = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(240, now);
-        osc.frequency.exponentialRampToValueAtTime(25, now + 0.25);
-        oscGain.gain.setValueAtTime(1.0, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(35, now + 0.08);
+        oscGain.gain.setValueAtTime(0.75, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
 
         osc.connect(oscGain);
         oscGain.connect(this.sfxGain);
         osc.start(now);
-        osc.stop(now + 0.25);
+        osc.stop(now + 0.08);
     }
 
-    // O Icônico "PING!" metálico do clipe do M1 Garand ao esvaziar
     playGarandPing() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
         const now = this.ctx.currentTime;
 
-        // Frequência metálica ressonante em 2800Hz e 4200Hz
         [2800, 4200, 5600].forEach((freq, idx) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -192,7 +185,6 @@ export class SoundFX {
             osc.stop(now + 0.6);
         });
 
-        // Som de ejeção mecânica metálica
         const clink = this.ctx.createOscillator();
         const clinkGain = this.ctx.createGain();
         clink.type = 'triangle';
@@ -206,7 +198,6 @@ export class SoundFX {
         clink.stop(now + 0.08);
     }
 
-    // Faca de Trincheira (Golpe no ar / Swoosh)
     playKnifeSlash() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -226,7 +217,6 @@ export class SoundFX {
         osc.stop(now + 0.12);
     }
 
-    // Impacto de corte de faca ou tiro em carne (Squish / Gore)
     playGoreSquish() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -256,7 +246,6 @@ export class SoundFX {
         noise.start(now);
     }
 
-    // Dano sofrido pelo Pracinha (Grunhido / Dor)
     playPlayerHurt() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -276,7 +265,6 @@ export class SoundFX {
         osc.stop(now + 0.25);
     }
 
-    // Morte de Inimigo / Grito Nazista retro
     playEnemyDeath() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -295,17 +283,15 @@ export class SoundFX {
         osc.start(now);
         osc.stop(now + 0.35);
 
-        // Pequeno squish junto
         setTimeout(() => this.playGoreSquish(), 50);
     }
 
-    // Coleta de Item (Munição, Vida, Ração, Café)
     playPickup(type = 'ammo') {
         if (!this.ctx || this.isMuted) return;
         this.resume();
         const now = this.ctx.currentTime;
 
-        const freqs = type === 'coffee' ? [523, 659, 784, 1046] : [440, 554, 659];
+        const freqs = type === 'coffee' ? [523, 659, 784, 1046] : (type === 'key' ? [659, 880, 1174] : [440, 554, 659]);
         freqs.forEach((freq, i) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -321,7 +307,6 @@ export class SoundFX {
         });
     }
 
-    // Abertura de porta de bunker / parede secreta (Som mecânico/madeira pesada)
     playDoorOpen() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -341,7 +326,6 @@ export class SoundFX {
         osc.stop(now + 0.45);
     }
 
-    // Porta trancada / sem chave
     playDoorLocked() {
         if (!this.ctx || this.isMuted) return;
         this.resume();
@@ -362,29 +346,26 @@ export class SoundFX {
         });
     }
 
-    // Trilha Sonora Retrô Militar FEB (Chiptune March / Doom Style)
     startMusic() {
         if (!this.ctx || this.musicPlaying) return;
         this.resume();
         this.musicPlaying = true;
 
-        // Marcha de batalha em tom menor (E minor / Dó / Sol / Si)
         const bassNotes = [
-            82.41, 82.41, 98.00, 82.41, // E2, E2, G2, E2
-            73.42, 73.42, 82.41, 73.42, // D2, D2, E2, D2
-            65.41, 65.41, 82.41, 65.41, // C2, C2, E2, C2
-            61.74, 73.42, 82.41, 98.00  // B1, D2, E2, G2
+            82.41, 82.41, 98.00, 82.41,
+            73.42, 73.42, 82.41, 73.42,
+            65.41, 65.41, 82.41, 65.41,
+            61.74, 73.42, 82.41, 98.00
         ];
         
         let step = 0;
-        const tempoMs = 150; // Rápido e tenso
+        const tempoMs = 150;
 
         this.musicInterval = setInterval(() => {
             if (!this.musicPlaying || this.isMuted) return;
             const now = this.ctx.currentTime;
             const freq = bassNotes[step % bassNotes.length];
 
-            // Baixo pulsante
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
             osc.type = 'sawtooth';
@@ -403,7 +384,6 @@ export class SoundFX {
             osc.start(now);
             osc.stop(now + 0.14);
 
-            // Chimbal / Bateria de marcha no contratempo
             if (step % 2 === 1) {
                 const bufferSize = this.ctx.sampleRate * 0.04;
                 const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);

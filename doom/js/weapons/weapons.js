@@ -11,7 +11,6 @@ export const WEAPON_IDS = {
     GARAND: 3
 };
 
-// Paleta de pele Morena/Parda do Pracinha (Diversidade autêntica da FEB)
 const SKIN_TONES = {
     base: '#8c5938',       // Tom de pele morena/parda
     highlight: '#a66e47',  // Luz nos nós dos dedos e antebraço
@@ -59,7 +58,7 @@ export class WeaponSystem {
                 ammoType: 'smg',
                 ammoPerShot: 1,
                 damage: 32,
-                fireRate: 0.095, // 650+ RPM frenético
+                fireRate: 0.095,
                 range: 20,
                 unlocked: false,
                 auto: true,
@@ -132,27 +131,23 @@ export class WeaponSystem {
             }
         }
 
-        // Retorno rápido e ágil do recuo da arma (Snappy recoil)
         this.recoilOffsetY = Math.max(0, this.recoilOffsetY - dt * 420);
         this.recoilOffsetX = this.recoilOffsetX * Math.max(0, 1 - dt * 25);
         this.recoilRot = this.recoilRot * Math.max(0, 1 - dt * 25);
 
-        // Retorno rápido do kick de câmera
         this.cameraKickY = Math.max(0, this.cameraKickY - dt * 120);
         this.cameraKickZ = Math.max(0, this.cameraKickZ - dt * 80);
     }
 
-    // Dispara a arma com soco e recuo físico
     shoot(player, soundFX, bloodScreen, particleManager) {
         if (this.cooldown > 0) return null;
 
         const weapon = this.getCurrentWeapon();
 
-        // Checagem de munição
         if (weapon.ammoType) {
             const currentAmmo = player.ammo[weapon.ammoType];
             if (currentAmmo < weapon.ammoPerShot) {
-                soundFX.playDoorLocked(); // Clique seco de sem munição
+                soundFX.playDoorLocked();
                 this.cooldown = 0.25;
                 return null;
             }
@@ -164,19 +159,15 @@ export class WeaponSystem {
         this.isFiring = true;
         this.muzzleFlash = weapon.id !== WEAPON_IDS.KNIFE;
 
-        // Recuo visual agressivo da arma (Subida brusca + tremor lateral)
         this.recoilOffsetY = weapon.id === WEAPON_IDS.GARAND ? 68 : (weapon.id === WEAPON_IDS.REVOLVER ? 52 : (weapon.id === WEAPON_IDS.THOMPSON ? 30 : 20));
         this.recoilOffsetX = (Math.random() - 0.5) * 16;
         this.recoilRot = (Math.random() - 0.5) * 0.12;
 
-        // Deslocamento de câmera para cima e para trás
         this.cameraKickY = weapon.cameraKickY;
         this.cameraKickZ = weapon.cameraKickZ;
 
-        // Screen shake dinâmico
         bloodScreen.addShake(weapon.recoilTrauma);
 
-        // Sons de cada armamento
         switch (weapon.id) {
             case WEAPON_IDS.KNIFE:
                 soundFX.playKnifeSlash();
@@ -206,7 +197,6 @@ export class WeaponSystem {
         };
     }
 
-    // Renderiza a arma e as mãos do Pracinha com tom de pele morena/parda
     render(ctx, width, height, bobbingOffset) {
         const weapon = this.getCurrentWeapon();
         const centerX = width / 2 + this.recoilOffsetX + bobbingOffset.x;
@@ -238,7 +228,6 @@ export class WeaponSystem {
         ctx.restore();
     }
 
-    // FACA DE TRINCHEIRA COM MÃO E ANTEBRAÇO MORENO DO PRACINHA
     renderKnife(ctx) {
         ctx.save();
         ctx.translate(35, 10);
@@ -246,7 +235,6 @@ export class WeaponSystem {
             ctx.rotate(-0.6 + (0.16 - this.animTimer) * 4.5);
         }
 
-        // Lâmina de aço afiada
         ctx.fillStyle = '#c5ccd3';
         ctx.beginPath();
         ctx.moveTo(-16, -115);
@@ -256,7 +244,6 @@ export class WeaponSystem {
         ctx.closePath();
         ctx.fill();
 
-        // Fio reluzente da lâmina
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.moveTo(-16, -115);
@@ -265,11 +252,9 @@ export class WeaponSystem {
         ctx.closePath();
         ctx.fill();
 
-        // Guarda-mão de bronze
         ctx.fillStyle = '#b8860b';
         ctx.fillRect(-28, 0, 48, 10);
 
-        // Cabo de madeira da FEB
         ctx.fillStyle = '#5c3317';
         ctx.fillRect(-18, 10, 28, 55);
         ctx.fillStyle = '#301808';
@@ -277,16 +262,13 @@ export class WeaponSystem {
             ctx.fillRect(-18, i, 28, 3);
         }
 
-        // MÃO MORENA / PARDA DO PRACINHA (Dedos cerrados segurando o cabo)
         this.renderHand(ctx, -4, 42, 28, true);
 
-        // Antebraço com manga verde-oliva enrolada
         ctx.fillStyle = SKIN_TONES.base;
         ctx.fillRect(-24, 70, 40, 50);
         ctx.fillStyle = SKIN_TONES.highlight;
         ctx.fillRect(-18, 70, 12, 50);
 
-        // Manga da farda enrolada
         ctx.fillStyle = SKIN_TONES.sleeve;
         ctx.fillRect(-28, 105, 48, 25);
         ctx.fillStyle = SKIN_TONES.sleeveShadow;
@@ -295,32 +277,26 @@ export class WeaponSystem {
         ctx.restore();
     }
 
-    // REVÓLVER M1917 .45 COM EMPUNHADURA DUPLA MORENA
     renderRevolver(ctx) {
         ctx.save();
 
-        // Cano de aço escurecido M1917
         ctx.fillStyle = '#2a2e33';
         ctx.fillRect(-10, -95, 20, 75);
         ctx.fillStyle = '#181a1c';
-        ctx.fillRect(-4, -102, 8, 8); // Mira frontal
+        ctx.fillRect(-4, -102, 8, 8);
 
-        // Tambor de 6 tiros com ranhuras
         ctx.fillStyle = '#393f45';
         ctx.fillRect(-18, -28, 36, 42);
         ctx.fillStyle = '#1b1d20';
         ctx.fillRect(-14, -22, 6, 32);
         ctx.fillRect(8, -22, 6, 32);
 
-        // Cão / Martelo
         ctx.fillStyle = '#181a1c';
         ctx.fillRect(-6, -42, 12, 16);
 
-        // Armação de ferro
         ctx.fillStyle = '#2a2e33';
         ctx.fillRect(-12, 12, 24, 30);
 
-        // Empunhadura de madeira de nogueira
         ctx.fillStyle = '#5a2e12';
         ctx.beginPath();
         ctx.moveTo(-12, 36);
@@ -330,18 +306,13 @@ export class WeaponSystem {
         ctx.closePath();
         ctx.fill();
 
-        // MÃOS MORENAS / PARDAS DO PRACINHA (Empunhadura firme com duas mãos)
-        // Mão esquerda dando apoio
         this.renderHand(ctx, -18, 58, 24, false);
-        // Mão direita no gatilho
         this.renderHand(ctx, 16, 62, 22, true);
 
-        // Antebraços morenos saindo para fora da tela
         ctx.fillStyle = SKIN_TONES.base;
         ctx.fillRect(-48, 80, 36, 60);
         ctx.fillRect(14, 84, 36, 60);
 
-        // Mangas verdes da FEB
         ctx.fillStyle = SKIN_TONES.sleeve;
         ctx.fillRect(-56, 120, 48, 30);
         ctx.fillRect(10, 124, 48, 30);
@@ -349,12 +320,10 @@ export class WeaponSystem {
         ctx.restore();
     }
 
-    // METRALHADORA THOMPSON .45 M1A1
     renderThompson(ctx) {
         ctx.save();
         ctx.translate(22, 8);
 
-        // Cano com aletas de resfriamento e compensador Cutts
         ctx.fillStyle = '#1e2124';
         ctx.fillRect(-16, -115, 14, 90);
         ctx.fillStyle = '#373d43';
@@ -362,35 +331,26 @@ export class WeaponSystem {
             ctx.fillRect(-18, cy, 18, 2);
         }
 
-        // Receptor metálico superior
         ctx.fillStyle = '#2f343a';
         ctx.fillRect(-22, -30, 44, 46);
 
-        // Carregador reto .45 ACP
         ctx.fillStyle = '#17191b';
         ctx.fillRect(-18, 16, 16, 52);
 
-        // Guarda-mão frontal de madeira clássica
         ctx.fillStyle = '#653b1b';
         ctx.fillRect(-28, -62, 20, 32);
 
-        // Coronha traseira
         ctx.fillStyle = '#583013';
         ctx.fillRect(8, 22, 28, 62);
 
-        // MÃOS MORENAS / PARDAS
-        // Mão esquerda segurando o guarda-mão de madeira
         this.renderHand(ctx, -24, -48, 20, false);
-        // Mão direita na empunhadura do gatilho
         this.renderHand(ctx, 16, 52, 25, true);
 
-        // Antebraço esquerdo
         ctx.fillStyle = SKIN_TONES.base;
         ctx.fillRect(-62, -20, 38, 70);
         ctx.fillStyle = SKIN_TONES.sleeve;
         ctx.fillRect(-72, 35, 48, 30);
 
-        // Antebraço direito
         ctx.fillStyle = SKIN_TONES.base;
         ctx.fillRect(14, 75, 40, 60);
         ctx.fillStyle = SKIN_TONES.sleeve;
@@ -399,42 +359,32 @@ export class WeaponSystem {
         ctx.restore();
     }
 
-    // FUZIL M1 GARAND .30-06
     renderGarand(ctx) {
         ctx.save();
         ctx.translate(14, 0);
 
-        // Cano de precisão .30-06
         ctx.fillStyle = '#202326';
         ctx.fillRect(-8, -140, 12, 105);
         ctx.fillStyle = '#121416';
-        ctx.fillRect(-10, -145, 16, 8); // Mira frontal
+        ctx.fillRect(-10, -145, 16, 8);
 
-        // Fuste e coronha longa de madeira de nogueira
         ctx.fillStyle = '#6e3c1a';
         ctx.fillRect(-14, -85, 24, 115);
-        // Braçadeiras metálicas
         ctx.fillStyle = '#2c3136';
         ctx.fillRect(-16, -75, 28, 6);
         ctx.fillRect(-16, -24, 28, 6);
 
-        // Câmara e ferrolho
         ctx.fillStyle = '#17191b';
         ctx.fillRect(-6, 0, 14, 26);
 
-        // MÃOS MORENAS / PARDAS
-        // Mão esquerda segurando o fuste de madeira
         this.renderHand(ctx, -18, -48, 21, false);
-        // Mão direita na coronha / gatilho
         this.renderHand(ctx, 14, 52, 26, true);
 
-        // Braço esquerdo estendido
         ctx.fillStyle = SKIN_TONES.base;
         ctx.fillRect(-58, -25, 40, 80);
         ctx.fillStyle = SKIN_TONES.sleeve;
         ctx.fillRect(-68, 35, 48, 30);
 
-        // Braço direito
         ctx.fillStyle = SKIN_TONES.base;
         ctx.fillRect(12, 75, 40, 60);
         ctx.fillStyle = SKIN_TONES.sleeve;
@@ -443,30 +393,25 @@ export class WeaponSystem {
         ctx.restore();
     }
 
-    // Helper para desenhar a mão com dedos e iluminação
     renderHand(ctx, x, y, radius, isRight = true) {
         ctx.save();
         ctx.translate(x, y);
 
-        // Sombra
         ctx.fillStyle = SKIN_TONES.shadow;
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
         ctx.fill();
 
-        // Base da mão morena
         ctx.fillStyle = SKIN_TONES.base;
         ctx.beginPath();
         ctx.arc(isRight ? -2 : 2, -1, radius - 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Destaque de luz nos nós dos dedos
         ctx.fillStyle = SKIN_TONES.highlight;
         ctx.beginPath();
         ctx.arc(isRight ? -4 : 4, -4, radius * 0.45, 0, Math.PI * 2);
         ctx.fill();
 
-        // Falanges dos dedos cerrados
         ctx.fillStyle = SKIN_TONES.shadow;
         for (let i = -1; i <= 1; i++) {
             ctx.fillRect(i * 6 - 2, radius * 0.3, 4, 3);
@@ -475,7 +420,6 @@ export class WeaponSystem {
         ctx.restore();
     }
 
-    // Muzzle Flash
     renderMuzzleFlash(ctx, weaponId) {
         const flashY = weaponId === WEAPON_IDS.GARAND ? -150 : (weaponId === WEAPON_IDS.THOMPSON ? -120 : -108);
         const flashX = weaponId === WEAPON_IDS.THOMPSON ? -4 : (weaponId === WEAPON_IDS.GARAND ? -2 : 0);

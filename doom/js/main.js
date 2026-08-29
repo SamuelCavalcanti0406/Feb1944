@@ -1,6 +1,6 @@
 /**
- * Ponto de Entrada Principal: Game Loop, Gerenciador de Estados e Inicialização
- * Projeto: "A Cobra Vai Fumar" (FEB 1944)
+ * Ponto de Entrada Principal: Game Loop, Gerenciador de Estados, Transição de Fases e Inicialização
+ * Projeto: "A Cobra Vai Fumar" (FEB 1944) - Fases 1 & 2
  */
 
 import { SoundFX } from './audio/sound_fx.js';
@@ -30,16 +30,15 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.state = GAME_STATES.TITLE;
 
-        // Configuração de Resolução Interna
         this.canvas.width = 640;
         this.canvas.height = 400;
 
-        // Sistemas
         this.soundFX = new SoundFX();
         this.textureManager = new TextureManager();
         this.textureManager.init();
 
-        this.gameMap = new GameMap();
+        this.currentLevel = 1;
+        this.gameMap = new GameMap(1);
         this.player = new Player(this.gameMap.playerSpawn.x, this.gameMap.playerSpawn.y, this.gameMap.playerSpawn.angle);
         this.camera = new Camera();
         this.input = new InputManager(this.canvas);
@@ -56,24 +55,52 @@ class Game {
         this.initEntities();
         this.setupInputHandlers();
 
-        // Loop
         requestAnimationFrame(this.loop.bind(this));
     }
 
     initEntities() {
-        this.enemies = this.gameMap.enemySpawns.map(s => new Enemy(s.type, s.x, s.y));
+        this.enemies = this.gameMap.enemySpawns.map(s => {
+            const enemy = new Enemy(s.type, s.x, s.y, s.dropItem);
+            enemy.onDeathCallback = (deadEnemy) => {
+                if (deadEnemy.dropItem) {
+                    this.pickups.push(new Pickup(deadEnemy.dropItem, deadEnemy.x, deadEnemy.y));
+                    if (deadEnemy.dropItem === 'key_officer') {
+                        this.hud.addMessage('★ ARTILHEIRO MG42 DERROTADO! A CHAVE DO OFICIAL FOI DERRUBADA! ★');
+                        this.soundFX.playPickup('key');
+                    }
+                }
+            };
+            return enemy;
+        });
+
         this.pickups = this.gameMap.pickupSpawns.map(s => new Pickup(s.type, s.x, s.y));
     }
 
     resetGame() {
-        this.gameMap = new GameMap();
-        this.player.reset(this.gameMap.playerSpawn);
+        this.currentLevel = 1;
+        this.gameMap = new GameMap(1);
+        this.player.reset(this.gameMap.playerSpawn, false);
         this.weaponSystem = new WeaponSystem();
         this.particleManager = new ParticleManager();
         this.initEntities();
         this.state = GAME_STATES.PLAYING;
-        this.hud.addMessage('★ MISSÃO INICIADA: AVANCE PELAS TRINCHEIRAS! ★');
+        this.hud.addMessage('★ FASE 1: MONTE CASTELLO - AVANCE PELAS TRINCHEIRAS! ★');
         this.soundFX.startMusic();
+    }
+
+    // Transição de Fase (Mantendo vida, blindagem, munição e armas do Pracinha)
+    transitionToLevel(nextLevel) {
+        this.currentLevel = nextLevel;
+        this.gameMap = new GameMap(nextLevel);
+        
+        // Preserva atributos de sobrevivência do jogador
+        this.player.reset(this.gameMap.playerSpawn, true);
+        this.particleManager = new ParticleManager();
+        this.initEntities();
+
+        this.hud.addMessage('★ FASE 2: BUNKER SUBTERRÂNEO ALEMÃO ★');
+        this.hud.addMessage('Encontre a CHAVE DO OFICIAL da SS para abrir o portão de extração!');
+        this.soundFX.playPickup('key');
     }
 
     setupInputHandlers() {
@@ -134,7 +161,6 @@ class Game {
 
             if (hitResult.hit && hitResult.target.isDead) {
                 this.player.kills++;
-                // Se o abate foi a curta distância (< 4m) ou explodiu o inimigo, espirra sangue no rosto e visor
                 if (hitResult.distance < 4.2 || hitResult.target.state === 'gib') {
                     this.player.triggerCloseKillBlood();
                     this.particleManager.addScreenBlood(3);
@@ -158,12 +184,10 @@ class Game {
 
     update(dt) {
         if (this.state === GAME_STATES.PLAYING) {
-            // Disparo contínuo para armas automáticas (Thompson)
             if (this.input.isMouseDown && this.weaponSystem.getCurrentWeapon().auto) {
                 this.executeShoot();
             }
 
-            // Atualiza Jogador
             const isMoving = this.input.keys['KeyW'] || this.input.keys['KeyS'] || 
                              this.input.keys['KeyA'] || this.input.keys['KeyD'] ||
                              this.input.keys['ArrowUp'] || this.input.keys['ArrowDown'];
@@ -177,24 +201,32 @@ class Game {
             this.particleManager.update(dt);
             this.hud.update(dt);
 
-            // Atualiza Inimigos
             for (const enemy of this.enemies) {
                 enemy.update(dt, this.player, this.gameMap, this.soundFX, this.bloodScreen, this.particleManager, this.hud);
             }
 
-            // Atualiza Coletáveis
             for (const pickup of this.pickups) {
                 pickup.update(dt, this.player, this.weaponSystem, this.soundFX, this.hud);
             }
 
-            // Checagem de Vitória (Chegar na saída do posto de comando)
-            const currentTile = this.gameMap.getTile(this.player.x, this.player.y);
-            if (currentTile === TILE_TYPES.EXIT_WALL || (Math.floor(this.player.x) === 18 && Math.floor(this.player.y) === 18)) {
-                this.state = GAME_STATES.VICTORY;
-                this.soundFX.stopMusic();
+            // GATILHO DE SAÍDA E TRANSIÇÃO DE NÍVEL
+            const curTile = this.gameMap.getTile(this.player.x, this.player.y);
+            const pMapX = Math.floor(this.player.x);
+            const pMapY = Math.floor(this.player.y);
+
+            if (this.currentLevel === 1) {
+                // Chegada na saída da Fase 1 -> Carrega Fase 2
+                if (curTile === TILE_TYPES.EXIT_WALL || (pMapX === 18 && pMapY === 17) || (pMapX === 18 && pMapY === 18)) {
+                    this.transitionToLevel(2);
+                }
+            } else if (this.currentLevel === 2) {
+                // Chegada na saída da Fase 2 -> Vitória Total da FEB
+                if (curTile === TILE_TYPES.EXIT_WALL || (pMapX === 22 && pMapY === 6)) {
+                    this.state = GAME_STATES.VICTORY;
+                    this.soundFX.stopMusic();
+                }
             }
 
-            // Checagem de Game Over
             if (this.player.health <= 0) {
                 this.state = GAME_STATES.GAMEOVER;
                 this.soundFX.stopMusic();
@@ -214,7 +246,6 @@ class Game {
             return;
         }
 
-        // Renderiza Mundo 2.5D com recuo de câmera (Kick) e iluminação
         const isMuzzleFlash = this.weaponSystem.muzzleFlash;
         this.raycaster.render(
             this.player,
@@ -228,21 +259,16 @@ class Game {
             this.weaponSystem
         );
 
-        // Renderiza Sangue no Visor do Pracinha e Overlays nos cantos da visão
         this.particleManager.renderScreenBlood(ctx, width, height - 74);
         this.bloodScreen.renderCornerBloodOverlay(ctx, width, height - 74, this.player.bloodOnFaceTimer);
 
-        // Renderiza Mira Central Retrô
         this.renderCrosshair(ctx, width, height - 74);
 
-        // Renderiza Arma e Braços Morenos da FEB em Primeira Pessoa
         const bobOffset = { x: this.camera.bobX, y: this.camera.bobY };
         this.weaponSystem.render(ctx, width, height, bobOffset);
 
-        // Renderiza HUD estilo DOOM
         this.hud.render(ctx, width, height, this.player, this.weaponSystem, this.gameMap);
 
-        // Telas de Fim de Jogo
         if (this.state === GAME_STATES.VICTORY) {
             this.renderVictoryScreen(ctx, width, height);
         } else if (this.state === GAME_STATES.GAMEOVER) {
@@ -257,7 +283,6 @@ class Game {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
         ctx.lineWidth = 1.5;
 
-        // Ponto central e traços cruzados
         ctx.beginPath();
         ctx.moveTo(cx - 7, cy); ctx.lineTo(cx - 2, cy);
         ctx.moveTo(cx + 2, cy); ctx.lineTo(cx + 7, cy);
@@ -270,27 +295,22 @@ class Game {
     }
 
     renderTitleScreen(ctx, width, height) {
-        // Fundo militar escuro com camuflagem
         ctx.fillStyle = '#141a14';
         ctx.fillRect(0, 0, width, height);
 
-        // Faixas verdes e amarelas sutis
         ctx.fillStyle = '#223322';
         ctx.fillRect(0, 40, width, 8);
         ctx.fillRect(0, height - 48, width, 8);
 
-        // Título Principal
         ctx.fillStyle = '#e9c46a';
         ctx.font = 'bold 36px "Courier New", monospace';
         ctx.textAlign = 'center';
         ctx.fillText('A COBRA VAI FUMAR!', width / 2, 90);
 
-        // Subtítulo
         ctx.fillStyle = '#52b788';
         ctx.font = 'bold 16px "Courier New", monospace';
         ctx.fillText('FORÇA EXPEDICIONÁRIA BRASILEIRA - ITÁLIA 1944', width / 2, 125);
 
-        // Emblema da Cobra Fumando estilizado
         ctx.fillStyle = '#2d6a4f';
         ctx.beginPath();
         ctx.arc(width / 2, 195, 45, 0, Math.PI * 2);
@@ -303,39 +323,40 @@ class Game {
         ctx.font = 'bold 38px monospace';
         ctx.fillText('🐍💨', width / 2, 208);
 
-        // Instruções
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 16px monospace';
-        ctx.fillText('★ CLIQUE NA TELA PARA JOGAR ★', width / 2, 275);
+        ctx.fillText('★ CLIQUE NA TELA PARA INICIAR A MISSÃO ★', width / 2, 275);
 
         ctx.fillStyle = '#a8dadc';
         ctx.font = '13px monospace';
-        ctx.fillText('W, A, S, D ou Setas: Mover & Strafe | MOUSE: Olhar & Atirar', width / 2, 315);
+        ctx.fillText('W, A, S, D: Mover & Strafe | MOUSE: Olhar & Atirar', width / 2, 315);
         ctx.fillText('1, 2, 3, 4: Armas | E / ESPAÇO: Abrir Portas e Segredos', width / 2, 340);
-        ctx.fillText('Pegue o Café da FEB para super velocidade!', width / 2, 365);
+        ctx.fillText('Fase 1: Monte Castello | Fase 2: Bunker Subterrâneo', width / 2, 365);
     }
 
     renderVictoryScreen(ctx, width, height) {
-        ctx.fillStyle = 'rgba(10, 35, 15, 0.85)';
+        ctx.fillStyle = 'rgba(10, 35, 15, 0.9)';
         ctx.fillRect(0, 0, width, height);
 
         ctx.fillStyle = '#ffd166';
-        ctx.font = 'bold 34px "Courier New", monospace';
+        ctx.font = 'bold 32px "Courier New", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('★ VITÓRIA DA FEB! ★', width / 2, 110);
+        ctx.fillText('★ MISSÃO CUMPRIDA! VITÓRIA DA FEB! ★', width / 2, 95);
 
         ctx.fillStyle = '#e8f5e9';
-        ctx.font = 'bold 18px monospace';
-        ctx.fillText('MONTE CASTELLO FOI CONQUISTADO!', width / 2, 155);
+        ctx.font = 'bold 17px monospace';
+        ctx.fillText('MONTE CASTELLO E O BUNKER DO ALTO COMANDO FORAM TOMADOS!', width / 2, 140);
 
         ctx.fillStyle = '#95d5b2';
         ctx.font = '15px monospace';
-        ctx.fillText(`Inimigos Eliminados: ${this.player.kills} / ${this.enemies.length}`, width / 2, 205);
-        ctx.fillText(`Pontuação de Honra: ${this.hud.score} pts`, width / 2, 235);
+        ctx.fillText(`Total de Inimigos Abatidos: ${this.player.kills}`, width / 2, 190);
+        ctx.fillText(`Pontuação Militar de Honra: ${this.hud.score} pts`, width / 2, 220);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 16px monospace';
-        ctx.fillText('CLIQUE PARA JOGAR NOVAMENTE', width / 2, 300);
+        ctx.fillText('★ A COBRA FUMOU NA ITÁLIA! ★', width / 2, 270);
+        ctx.font = '14px monospace';
+        ctx.fillText('CLIQUE PARA JOGAR A CAMPANHA NOVAMENTE', width / 2, 310);
     }
 
     renderGameOverScreen(ctx, width, height) {

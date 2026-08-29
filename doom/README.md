@@ -1,11 +1,25 @@
 # ★ A Cobra Vai Fumar! (FEB 1944) ★
 
-Um **Boomer Shooter 2.5D retro** inspirado em clássicos como *DOOM (1993)* e *Wolfenstein 3D*, ambientado na Campanha da Itália durante a Segunda Guerra Mundial. O jogador assume o papel de um **Pracinha da Força Expedicionária Brasileira (FEB)** enfrentando as forças da Wehrmacht na tomada de Monte Castello.
+Um **Boomer Shooter 2.5D retro** inspirado em clássicos como *DOOM (1993)* e *Wolfenstein 3D*, ambientado na Campanha da Itália durante a Segunda Guerra Mundial. O jogador assume o papel de um **Pracinha da Força Expedicionária Brasileira (FEB)** enfrentando as forças da Wehrmacht e da SS na tomada de Monte Castello e na invasão do Bunker do Alto Comando.
 
 ![HTML5](https://img.shields.io/badge/HTML5-Canvas%202.5D-orange)
 ![WebAudio](https://img.shields.io/badge/Audio-Web%20Audio%20API-blue)
 ![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Pure%20Vanilla)-brightgreen)
 ![Deploy](https://img.shields.io/badge/Deploy-GitHub%20Pages-success)
+
+---
+
+## 🗺️ Fases da Campanha
+
+1. **Fase 1: Monte Castello - A Linha Gótica**:
+   - Trincheiras com neve e lama, travessia dos postos avançados e invasão dos primeiros bunkers de concreto.
+   - Encontre a Chave de Ferro e a Chave de Ouro para alcançar o elevador de acesso subterrâneo.
+2. **Fase 2: Bunker Subterrâneo Alemão - Complexo de Comando**:
+   - Layout fechado, corredores labirínticos estreitos de 1 tile e esquinas cegas de 90° focadas em combate corpo a corpo e tiros à queima-roupa.
+   - Texturas de concreto armado sujo, mapas de operações militares com setas táticas, flâmulas nazistas e portas blindadas de aço maciço.
+   - Iluminação densa e sombria com fog claustrofóbico de bunker.
+   - Emboscadas de soldados e oficiais da SS.
+   - Elimine o comandante para obter a **Chave do Oficial** e abrir o portão de extração final!
 
 ---
 
@@ -25,33 +39,20 @@ Um **Boomer Shooter 2.5D retro** inspirado em clássicos como *DOOM (1993)* e *W
 ## ⚔️ Armamento Histórico da FEB
 
 1. **Faca de Trincheira (Corpo a Corpo)**: Ataque veloz e silencioso com golpe cortante.
-2. **Revólver M1917 .45**: O companheiro inicial do pracinha, preciso e com soco pesado.
+2. **Revólver M1917 .45**: O companheiro inicial do pracinha, preciso e com coice firme.
 3. **Metralhadora Thompson .45 M1A1**: Fogo automático devastador a curta/média distância.
 4. **Fuzil M1 Garand .30-06**: Alto poder de parada à distância com o icônico som *"PING!"* ao esvaziar o clipe.
-
----
-
-## 🪖 Itens Coletáveis e Segredos
-
-- 🥫 **Ração de Combate (K-Ration)**: Recupera +25 de Vida.
-- ☕ **Café Forte da FEB**: Recupera +15 de Vida e concede **SUPER VELOCIDADE** por 12 segundos (o rosto do Pracinha abre um sorriso diabólico!).
-- 🪖 **Capacete de Aço M1**: Concede +35 de Blindagem (absorve 50% de todo dano recebido).
-- 🗝️ **Chave de Ferro & Chave de Ouro**: Necessárias para abrir as áreas fortificadas e o Posto de Comando.
-- 🐍 **Passagem Secreta da FEB**: Paredes marcadas com a cobrinha fumando escondem armamentos pesados! Pressione `E` para abri-las.
 
 ---
 
 ## 🚀 Como Executar Localmente ou Fazer Deploy
 
 ### Executar Localmente
-Como o jogo é feito em **JavaScript Vanilla com ES Modules**, você pode executá-lo com qualquer servidor HTTP local:
+```bash
+# Opção 1: Via Node.js
+npx serve .
 
-- **Via VS Code / IDE**: Clique com o botão direito em `index.html` e selecione *Open with Live Server*.
-- **Via Node.js**: `npx serve` ou `npx http-server`
-- **Via Python**: `python -m http.server 8000`
-
-### Deploy no GitHub Pages (1 Clique)
-1. Crie um repositório no GitHub e faça o push dos arquivos.
-2. No GitHub, vá em **Settings** > **Pages**.
-3. Em **Branch**, selecione `main` (ou `master`) e salve.
-4. Seu jogo estará imediatamente jogável online pelo link gerado!
+# Opção 2: Via Python
+python -m http.server 8000
+```
+Abra `http://localhost:8000` no seu navegador.

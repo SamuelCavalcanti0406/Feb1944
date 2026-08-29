@@ -43,7 +43,7 @@ body {
 
 .game-header h1 {
     font-size: 16px;
-    color: #e9c46a;
+    color: #b99a49;
     letter-spacing: 1px;
 }
 
@@ -67,7 +67,6 @@ body {
     cursor: crosshair;
 }
 
-/* Efeito Retrô de Scanlines CRT (Opcional) */
 .scanlines {
     position: absolute;
     top: 0;

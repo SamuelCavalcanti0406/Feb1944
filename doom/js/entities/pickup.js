@@ -1,5 +1,5 @@
 /**
- * Itens Coletáveis (Ração, Café da FEB, Armaduras, Munições, Chaves e Armas)
+ * Itens Coletáveis: Ração, Café da FEB, Blindagens, Munições, Armas e Chaves (Ferro, Ouro, Oficial).
  */
 import { WEAPON_IDS } from '../weapons/weapons.js';
 
@@ -39,7 +39,7 @@ export class Pickup {
 
             case 'coffee':
                 player.heal(15);
-                player.coffeeTimer = 12.0; // 12 segundos de velocidade máxima!
+                player.coffeeTimer = 14.0;
                 player.triggerGrin();
                 soundFX.playPickup('coffee');
                 hud.addMessage('★ CAFÉ FORTE DA FEB! (+15 Vida & VELOCIDADE MÁXIMA!) ★');
@@ -92,6 +92,14 @@ export class Pickup {
                 picked = true;
                 break;
 
+            case 'key_officer':
+                player.hasOfficerKey = true;
+                player.triggerGrin();
+                soundFX.playPickup('key');
+                hud.addMessage('★ CHAVE DO OFICIAL DA SS ENCONTRADA! ★');
+                picked = true;
+                break;
+
             case 'weapon_thompson':
                 weaponSystem.unlockWeapon(WEAPON_IDS.THOMPSON);
                 player.addAmmo('smg', 60);
@@ -125,8 +133,8 @@ export class Pickup {
 
         const s = size / 64;
 
-        // Sombra suave no chão
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        // Sombra no chão
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
         ctx.beginPath();
         ctx.ellipse(0, 18 * s, 14 * s, 5 * s, 0, 0, Math.PI * 2);
         ctx.fill();
@@ -152,6 +160,9 @@ export class Pickup {
             case 'key_gold':
                 this.renderKey(ctx, s, '#ffd166');
                 break;
+            case 'key_officer':
+                this.renderOfficerKey(ctx, s);
+                break;
             case 'weapon_thompson':
             case 'weapon_garand':
                 this.renderWeaponPickup(ctx, s, this.type);
@@ -162,26 +173,22 @@ export class Pickup {
     }
 
     renderRation(ctx, s) {
-        // Lata de K-Ration militar
         ctx.fillStyle = '#606c38';
         ctx.fillRect(-10 * s, -8 * s, 20 * s, 22 * s);
-        // Cruz branca de primeiros socorros
         ctx.fillStyle = '#fefae0';
         ctx.fillRect(-2 * s, -2 * s, 4 * s, 10 * s);
         ctx.fillRect(-5 * s, 1 * s, 10 * s, 4 * s);
     }
 
     renderCoffee(ctx, s) {
-        // Caneca esmaltada militar de café fumegante da FEB
         ctx.fillStyle = '#283618';
         ctx.fillRect(-8 * s, -6 * s, 16 * s, 18 * s);
-        // Alça da caneca
         ctx.strokeStyle = '#283618';
         ctx.lineWidth = 3 * s;
         ctx.beginPath();
         ctx.arc(10 * s, 2 * s, 5 * s, -Math.PI / 2, Math.PI / 2);
         ctx.stroke();
-        // Fumaça saindo do café quente
+
         ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
         ctx.beginPath();
         ctx.arc(-2 * s, -12 * s, 3 * s, 0, Math.PI * 2);
@@ -190,25 +197,21 @@ export class Pickup {
     }
 
     renderHelmet(ctx, s) {
-        // Capacete M1 verde-oliva com a Cobra Fumando
         ctx.fillStyle = '#3a5a40';
         ctx.beginPath();
         ctx.arc(0, 0, 14 * s, Math.PI, 0);
         ctx.fill();
         ctx.fillRect(-16 * s, 0, 32 * s, 4 * s);
-        // Emblema amarelo/verde
         ctx.fillStyle = '#e9c46a';
         ctx.fillRect(-3 * s, -8 * s, 6 * s, 5 * s);
     }
 
     renderAmmoBox(ctx, s, type) {
-        // Caixa de munição de madeira/metal
         ctx.fillStyle = '#4a4e2d';
         ctx.fillRect(-12 * s, -4 * s, 24 * s, 18 * s);
         ctx.strokeStyle = '#1e2012';
         ctx.lineWidth = 1.5 * s;
         ctx.strokeRect(-12 * s, -4 * s, 24 * s, 18 * s);
-        // Cartuchos de latão
         ctx.fillStyle = '#dda15e';
         ctx.fillRect(-6 * s, -8 * s, 3 * s, 6 * s);
         ctx.fillRect(3 * s, -8 * s, 3 * s, 6 * s);
@@ -228,6 +231,32 @@ export class Pickup {
         ctx.fillRect(-2 * s, 0, 4 * s, 16 * s);
         ctx.fillRect(2 * s, 4 * s, 5 * s, 3 * s);
         ctx.fillRect(2 * s, 10 * s, 5 * s, 3 * s);
+    }
+
+    // CHAVE DO OFICIAL DA SS (Vermelha com Caveira Prateada)
+    renderOfficerKey(ctx, s) {
+        // Cabeça da chave com formato de cruz militar / caveira
+        ctx.fillStyle = '#b81414'; // Vermelho sangue
+        ctx.beginPath();
+        ctx.arc(0, -8 * s, 8 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#3a0505';
+        ctx.lineWidth = 1.5 * s;
+        ctx.stroke();
+
+        // Caveira prateada no topo
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-3 * s, -11 * s, 6 * s, 5 * s);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(-2 * s, -10 * s, 1.5 * s, 1.5 * s);
+        ctx.fillRect(0.5 * s, -10 * s, 1.5 * s, 1.5 * s);
+
+        // Haste de aço escuro
+        ctx.fillStyle = '#d6dbe0';
+        ctx.fillRect(-2.5 * s, 0, 5 * s, 18 * s);
+        // Dentes de segredo duplo
+        ctx.fillRect(2.5 * s, 5 * s, 5 * s, 3 * s);
+        ctx.fillRect(2.5 * s, 11 * s, 6 * s, 3 * s);
     }
 
     renderWeaponPickup(ctx, s, type) {

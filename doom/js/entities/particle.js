@@ -6,7 +6,7 @@ export class Particle {
     constructor(x, y, z, vx, vy, vz, color, size, life, type = 'blood') {
         this.x = x;
         this.y = y;
-        this.z = z; // 0 = chão, 0.5 = nível dos olhos, 1.0 = teto
+        this.z = z;
         this.vx = vx;
         this.vy = vy;
         this.vz = vz;
@@ -25,7 +25,6 @@ export class Particle {
         this.z += this.vz * dt;
         this.vz -= this.gravity * dt;
 
-        // Limite no chão
         if (this.z < 0) {
             this.z = 0;
             this.vx *= 0.5;
@@ -34,7 +33,7 @@ export class Particle {
         }
 
         if (this.type === 'smoke') {
-            this.size += dt * 4; // Fumaça expande
+            this.size += dt * 4;
         }
     }
 }
@@ -46,7 +45,6 @@ export class ParticleManager {
     }
 
     update(dt) {
-        // Atualiza partículas 3D do mundo
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
             p.update(dt);
@@ -55,7 +53,6 @@ export class ParticleManager {
             }
         }
 
-        // Atualiza sangue na tela (escorrendo)
         for (let i = this.screenBloodDrops.length - 1; i >= 0; i--) {
             const drop = this.screenBloodDrops[i];
             drop.life -= dt;
@@ -67,7 +64,6 @@ export class ParticleManager {
         }
     }
 
-    // Explosão de sangue quando o inimigo é atingido
     spawnBlood(x, y, z = 0.5, amount = 14, isGib = false) {
         const count = isGib ? amount * 2.5 : amount;
         const colors = ['#8a0303', '#b30000', '#630000', '#e60000'];
@@ -86,7 +82,6 @@ export class ParticleManager {
         }
     }
 
-    // Faíscas de tiro atingindo concreto / metal
     spawnSparks(x, y, z = 0.5, amount = 6) {
         const colors = ['#fffb00', '#ff9900', '#ffffff'];
         for (let i = 0; i < amount; i++) {
@@ -103,7 +98,6 @@ export class ParticleManager {
         }
     }
 
-    // Fumaça de cano de arma / explosão
     spawnSmoke(x, y, z = 0.5, amount = 4) {
         for (let i = 0; i < amount; i++) {
             const vx = (Math.random() - 0.5) * 0.4;
@@ -117,7 +111,6 @@ export class ParticleManager {
         }
     }
 
-    // Gotas de sangue espirradas diretamente na tela/visor do jogador
     addScreenBlood(amount = 4) {
         for (let i = 0; i < amount; i++) {
             this.screenBloodDrops.push({
@@ -132,7 +125,6 @@ export class ParticleManager {
         }
     }
 
-    // Renderiza o sangue na tela (Overlay do visor)
     renderScreenBlood(ctx, width, height) {
         if (this.screenBloodDrops.length === 0) return;
 
@@ -146,11 +138,9 @@ export class ParticleManager {
             ctx.arc(screenX, screenY, drop.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Rastro escorrendo
             ctx.fillStyle = `rgba(90, 0, 0, ${drop.alpha * 0.6})`;
             ctx.fillRect(screenX - drop.radius * 0.3, screenY, drop.radius * 0.6, drop.radius * 1.6);
 
-            // Brilho do sangue fresco
             ctx.fillStyle = `rgba(220, 20, 20, ${drop.alpha * 0.4})`;
             ctx.beginPath();
             ctx.arc(screenX - drop.radius * 0.3, screenY - drop.radius * 0.3, drop.radius * 0.3, 0, Math.PI * 2);
